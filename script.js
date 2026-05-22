@@ -6,67 +6,96 @@ const status = document.getElementById("status");
 const error = document.getElementById("error");
 const result = document.getElementById("result");
 
-btn.addEventListener("click", run);
+btn.addEventListener("click", handleCompare);
 
-async function run() {
-  const aName = userAInput.value.trim();
-  const bName = userBInput.value.trim();
+async function handleCompare() {
+  const users = getUsers();
 
-  clearUI();
+  reset();
 
-  if (!aName || !bName) {
-    error.textContent = "Both usernames required";
+  if (!users.a || !users.b) {
+    showError("Both usernames are required");
     return;
   }
 
-  status.textContent = "Analyzing developers...";
+  setStatus("Loading GitHub data...");
 
   try {
     const [a, b] = await Promise.all([
-      fetchUser(aName),
-      fetchUser(bName)
+      fetchUser(users.a),
+      fetchUser(users.b)
     ]);
 
-    const scoreA = a.public_repos + a.followers;
-    const scoreB = b.public_repos + b.followers;
-
-    const winner =
-      scoreA > scoreB ? a.login : b.login;
-
-    result.innerHTML = `
-      <div>
-        <h2>${a.login}</h2>
-        <p>Followers: ${a.followers}</p>
-        <p>Repos: ${a.public_repos}</p>
-        <p>Score: ${scoreA}</p>
-      </div>
-
-      <div>
-        <h2>${b.login}</h2>
-        <p>Followers: ${b.followers}</p>
-        <p>Repos: ${b.public_repos}</p>
-        <p>Score: ${scoreB}</p>
-      </div>
-
-      <h3>Winner: ${winner}</h3>
-    `;
-  } catch (e) {
-    error.textContent = e.message;
+    render(a, b);
+  } catch (err) {
+    showError(err.message);
   } finally {
-    status.textContent = "";
+    setStatus("");
   }
 }
 
+function getUsers() {
+  return {
+    a: userAInput.value.trim(),
+    b: userBInput.value.trim()
+  };
+}
+
 async function fetchUser(username) {
-  const res = await fetch(`https://api.github.com/users/${username}`);
+  const res = await fetch(
+    `https://api.github.com/users/${username}`
+  );
 
   if (res.status === 404) throw new Error("User not found");
-  if (!res.ok) throw new Error("API error");
+  if (res.status === 403) throw new Error("Rate limit exceeded");
+  if (!res.ok) throw new Error("API failed");
 
   return res.json();
 }
 
-function clearUI() {
+function score(user) {
+  return user.followers + user.public_repos * 2;
+}
+
+function render(a, b) {
+  const scoreA = score(a);
+  const scoreB = score(b);
+
+  const winner =
+    scoreA === scoreB
+      ? "Tie"
+      : scoreA > scoreB
+      ? a.login
+      : b.login;
+
+  result.innerHTML = `
+    <div>
+      <h2>${a.login}</h2>
+      <p>Followers: ${a.followers}</p>
+      <p>Repos: ${a.public_repos}</p>
+      <p>Score: ${scoreA}</p>
+    </div>
+
+    <div>
+      <h2>${b.login}</h2>
+      <p>Followers: ${b.followers}</p>
+      <p>Repos: ${b.public_repos}</p>
+      <p>Score: ${scoreB}</p>
+    </div>
+
+    <h3>Winner: ${winner}</h3>
+  `;
+}
+
+function setStatus(msg) {
+  status.textContent = msg;
+}
+
+function showError(msg) {
+  error.textContent = msg;
+}
+
+function reset() {
   status.textContent = "";
   error.textContent = "";
   result.innerHTML = "";
