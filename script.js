@@ -9,32 +9,46 @@ const result = document.getElementById("result");
 btn.addEventListener("click", run);
 
 async function run() {
-  const userA = userAInput.value.trim();
-  const userB = userBInput.value.trim();
+  const aName = userAInput.value.trim();
+  const bName = userBInput.value.trim();
 
   clearUI();
 
-  if (!userA || !userB) {
+  if (!aName || !bName) {
     error.textContent = "Both usernames required";
     return;
   }
 
-  status.textContent = "Fetching data...";
+  status.textContent = "Analyzing developers...";
 
   try {
-    const a = await fetchUser(userA);
-    const b = await fetchUser(userB);
+    const [a, b] = await Promise.all([
+      fetchUser(aName),
+      fetchUser(bName)
+    ]);
+
+    const scoreA = a.public_repos + a.followers;
+    const scoreB = b.public_repos + b.followers;
+
+    const winner =
+      scoreA > scoreB ? a.login : b.login;
 
     result.innerHTML = `
       <div>
         <h2>${a.login}</h2>
-        <p>${a.public_repos} repos</p>
+        <p>Followers: ${a.followers}</p>
+        <p>Repos: ${a.public_repos}</p>
+        <p>Score: ${scoreA}</p>
       </div>
 
       <div>
         <h2>${b.login}</h2>
-        <p>${b.public_repos} repos</p>
+        <p>Followers: ${b.followers}</p>
+        <p>Repos: ${b.public_repos}</p>
+        <p>Score: ${scoreB}</p>
       </div>
+
+      <h3>Winner: ${winner}</h3>
     `;
   } catch (e) {
     error.textContent = e.message;
