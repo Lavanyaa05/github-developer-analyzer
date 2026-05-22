@@ -1,40 +1,48 @@
-// DOM
-const input = document.getElementById("username");
-const btn = document.getElementById("search");
+const userAInput = document.getElementById("userA");
+const userBInput = document.getElementById("userB");
+const btn = document.getElementById("compare");
 
-const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
-const resultEl = document.getElementById("result");
+const status = document.getElementById("status");
+const error = document.getElementById("error");
+const result = document.getElementById("result");
 
-// Controller
-btn.addEventListener("click", handleSearch);
+btn.addEventListener("click", run);
 
-async function handleSearch() {
-  const username = input.value.trim();
+async function run() {
+  const userA = userAInput.value.trim();
+  const userB = userBInput.value.trim();
 
   clearUI();
 
-  if (!username) {
-    setError("Username required");
+  if (!userA || !userB) {
+    error.textContent = "Both usernames required";
     return;
   }
 
-  setStatus("Loading...");
+  status.textContent = "Fetching data...";
 
   try {
-    const user = await fetchUser(username);
-    const repos = await fetchRepos(username);
+    const a = await fetchUser(userA);
+    const b = await fetchUser(userB);
 
-    renderUser(user, repos);
+    result.innerHTML = `
+      <div>
+        <h2>${a.login}</h2>
+        <p>${a.public_repos} repos</p>
+      </div>
 
-  } catch (err) {
-    setError(err.message);
+      <div>
+        <h2>${b.login}</h2>
+        <p>${b.public_repos} repos</p>
+      </div>
+    `;
+  } catch (e) {
+    error.textContent = e.message;
   } finally {
-    clearStatus();
+    status.textContent = "";
   }
 }
 
-// API layer
 async function fetchUser(username) {
   const res = await fetch(`https://api.github.com/users/${username}`);
 
@@ -44,58 +52,8 @@ async function fetchUser(username) {
   return res.json();
 }
 
-async function fetchRepos(username) {
-  const res = await fetch(`https://api.github.com/users/${username}/repos?per_page=10`);
-
-  if (!res.ok) throw new Error("Failed to fetch repos");
-
-  return res.json();
-}
-
-// UI layer
-function renderUser(user, repos) {
-  const topRepos = repos
-    .sort((a, b) => b.stargazers_count - a.stargazers_count)
-    .slice(0, 5);
-
-  resultEl.innerHTML = `
-    <div class="card">
-      <img src="${user.avatar_url}" width="80" />
-      <h3>${user.login}</h3>
-      <p>${user.bio || "No bio"}</p>
-
-      <p>Followers: ${user.followers}</p>
-      <p>Repos: ${user.public_repos}</p>
-
-      <h4>Top Repositories</h4>
-      <ul>
-        ${topRepos.map(repo => `
-          <li>
-            <a href="${repo.html_url}" target="_blank">
-              ${repo.name} ⭐ ${repo.stargazers_count}
-            </a>
-          </li>
-        `).join("")}
-      </ul>
-    </div>
-  `;
-}
-
-// UI helpers
-function setStatus(msg) {
-  statusEl.textContent = msg;
-}
-
-function clearStatus() {
-  statusEl.textContent = "";
-}
-
-function setError(msg) {
-  errorEl.textContent = msg;
-}
-
 function clearUI() {
-  statusEl.textContent = "";
-  errorEl.textContent = "";
-  resultEl.innerHTML = "";
+  status.textContent = "";
+  error.textContent = "";
+  result.innerHTML = "";
 }
