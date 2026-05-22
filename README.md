@@ -5,6 +5,8 @@ A web app that analyzes GitHub user profiles, repositories, and developer statis
 
 A modern GitHub profile comparison dashboard built with vanilla JavaScript, HTML, and CSS.
 
+Live Demo - https://youtu.be/KU2M6Foq79E 
+
 Compare two GitHub users based on:
 
 - ⭐ Total Stars
@@ -72,7 +74,7 @@ project/
 
 ---
 
-# 📸 Preview
+# Purpose
 
 Compare GitHub developers side-by-side with detailed statistics and visual scoring.
 
